@@ -1,3 +1,4 @@
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -71,7 +72,7 @@ function AppRoutes() {
   );
 }
 
-export function App() {
+const App: React.FC = () => {
   useEffect(() => {
     // Load Instrument Sans from Google Fonts
     const link = document.createElement('link');
@@ -97,6 +98,6 @@ export function App() {
       </AuthProvider>
     </ThemeProvider>
   );
-}
+};
 
 export default App;
