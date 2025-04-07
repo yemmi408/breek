@@ -1,16 +1,17 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User } from '../types';
 import { useAuth } from './AuthContext';
+import { supabaseService } from '../services/supabase';
 
 interface UserContextType {
   users: User[];
   getUser: (userId: string) => User | undefined;
   getUserByUsername: (username: string) => User | undefined;
-  followUser: (userId: string) => void;
-  unfollowUser: (userId: string) => void;
+  followUser: (userId: string) => Promise<void>;
+  unfollowUser: (userId: string) => Promise<void>;
   isFollowing: (userId: string) => boolean;
-  getFollowers: (userId: string, limit?: number) => User[];
-  getFollowing: (userId: string, limit?: number) => User[];
+  getFollowers: (userId: string) => Promise<User[]>;
+  getFollowing: (userId: string) => Promise<User[]>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -20,21 +21,18 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const { currentUser, updateProfile } = useAuth();
 
   useEffect(() => {
-    // Load users from localStorage
-    try {
-      const savedUsers = localStorage.getItem('users');
-      if (savedUsers) {
-        setUsers(JSON.parse(savedUsers));
-      } else {
-        // Initialize with empty users array - removed demo users
-        const emptyUsers: User[] = [];
-        setUsers(emptyUsers);
-        localStorage.setItem('users', JSON.stringify(emptyUsers));
+    const loadUsers = async () => {
+      try {
+        const { data, error } = await supabaseService.getUsers();
+        if (error) throw error;
+        setUsers(data);
+      } catch (error) {
+        console.error('Error loading users:', error);
+        setUsers([]);
       }
-    } catch (error) {
-      console.error("Error loading users:", error);
-      setUsers([]);
-    }
+    };
+
+    loadUsers();
   }, []);
 
   const getUser = (userId: string) => {
@@ -45,27 +43,29 @@ export function UserProvider({ children }: { children: ReactNode }) {
     return users.find(user => user.username === username);
   };
 
-  const followUser = (userId: string) => {
+  const followUser = async (userId: string) => {
     if (!currentUser || userId === currentUser.id) return;
     
     try {
-      if (!currentUser.following.includes(userId)) {
-        const updatedFollowing = [...currentUser.following, userId];
-        updateProfile({ following: updatedFollowing });
-      }
+      await supabaseService.followUser(currentUser.id, userId);
+      const updatedFollowing = [...currentUser.following, userId];
+      await updateProfile({ following: updatedFollowing });
     } catch (error) {
-      console.error("Error following user:", error);
+      console.error('Error following user:', error);
+      throw error;
     }
   };
 
-  const unfollowUser = (userId: string) => {
+  const unfollowUser = async (userId: string) => {
     if (!currentUser) return;
     
     try {
+      await supabaseService.unfollowUser(currentUser.id, userId);
       const updatedFollowing = currentUser.following.filter(id => id !== userId);
-      updateProfile({ following: updatedFollowing });
+      await updateProfile({ following: updatedFollowing });
     } catch (error) {
-      console.error("Error unfollowing user:", error);
+      console.error('Error unfollowing user:', error);
+      throw error;
     }
   };
 
@@ -74,86 +74,46 @@ export function UserProvider({ children }: { children: ReactNode }) {
     return currentUser.following.includes(userId);
   };
 
-  /**
-   * Get users who are following the specified user
-   * @param userId The ID of the user to get followers for
-   * @param limit Optional limit to the number of followers to return (most recent first)
-   * @returns Array of users who follow the specified user
-   */
-  const getFollowers = (userId: string, limit?: number): User[] => {
-    if (!userId) return [];
-    
+  const getFollowers = async (userId: string) => {
     try {
-      // Find users who have this userId in their following array
-      const followers = users.filter(user => user.following.includes(userId));
-      
-      // Sort by most recently followed (placeholder since we don't track follow dates)
-      // In a real app, we would sort by actual follow date
-      // For now, we'll return in reverse order as a proxy for "most recent"
-      const sortedFollowers = [...followers].reverse();
-      
-      // Limit to the specified number if provided
-      return limit ? sortedFollowers.slice(0, limit) : sortedFollowers;
+      return await supabaseService.getFollowers(userId);
     } catch (error) {
-      console.error("Error getting followers:", error);
-      return [];
+      console.error('Error getting followers:', error);
+      throw error;
     }
   };
 
-  /**
-   * Get users that the specified user is following
-   * @param userId The ID of the user to get following list for
-   * @param limit Optional limit to the number of following to return (most recent first)
-   * @returns Array of users that the specified user follows
-   */
-  const getFollowing = (userId: string, limit?: number): User[] => {
-    if (!userId) return [];
-    
+  const getFollowing = async (userId: string) => {
     try {
-      // Get the user
-      const user = getUser(userId);
-      if (!user) return [];
-      
-      // Get the IDs of users they're following
-      const followingIds = user.following;
-      
-      // Map IDs to user objects, filtering out any that don't exist
-      const followingUsers = followingIds
-        .map(id => getUser(id))
-        .filter((user): user is User => user !== undefined);
-      
-      // Reverse the order as a proxy for "most recent first"
-      // In a real app, we would sort by actual follow date
-      const sortedFollowing = [...followingUsers].reverse();
-      
-      // Limit to the specified number if provided
-      return limit ? sortedFollowing.slice(0, limit) : sortedFollowing;
+      return await supabaseService.getFollowing(userId);
     } catch (error) {
-      console.error("Error getting following:", error);
-      return [];
+      console.error('Error getting following:', error);
+      throw error;
     }
+  };
+
+  const value = {
+    users,
+    getUser,
+    getUserByUsername,
+    followUser,
+    unfollowUser,
+    isFollowing,
+    getFollowers,
+    getFollowing
   };
 
   return (
-    <UserContext.Provider value={{ 
-      users,
-      getUser,
-      getUserByUsername,
-      followUser,
-      unfollowUser,
-      isFollowing,
-      getFollowers,
-      getFollowing,
-    }}>
+    <UserContext.Provider value={value}>
       {children}
     </UserContext.Provider>
   );
 }
 
-export function useUsers() {
+export function useUser() {
   const context = useContext(UserContext);
   if (context === undefined) {
-    throw new Error('useUsers must be used within a UserProvider');
+    throw new Error('useUser must be used within a UserProvider');
   }
   return context;
 }

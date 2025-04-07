@@ -14,6 +14,12 @@ import { ProfilePage } from './pages/ProfilePage';
 import { SettingsPage } from './pages/SettingsPage';
 import { PostPage } from './pages/PostPage';
 import { CommentPage } from './pages/CommentPage';
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import PostDetail from './pages/PostDetail';
+import AuthCallback from './pages/AuthCallback';
+import TestDatabase from './pages/TestDatabase';
 import './index.css';
 
 // Protected route component
@@ -55,6 +61,8 @@ function AppRoutes() {
                 <HomePage />
               </ProtectedRoute>
             } />
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/test-database" element={<TestDatabase />} />
           </Routes>
         </main>
         {currentUser && <MobileFooter />}

@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.49.4",
     "@trpc/client": "^11.0.0",
     "@trpc/server": "^11.0.0",
     "date-fns": "^4.1.0",

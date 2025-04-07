@@ -1,16 +1,16 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useMemo } from 'react';
-import { Post } from '../types';
+import { Post, Comment } from '../types';
 import { useAuth } from './AuthContext';
 import { generatePostUrl } from '../utils/urlUtils';
-import { useLocalStorage } from '../hooks/useLocalStorage';
+import { supabaseService } from '../services/supabase';
 
 interface PostContextType {
   posts: Post[];
-  createPost: (content: string) => void;
-  deletePost: (postId: string) => void;
+  createPost: (content: string, mediaUrl?: string) => Promise<void>;
+  deletePost: (postId: string) => Promise<void>;
   editPost: (postId: string, content: string) => void;
-  likePost: (postId: string) => void;
-  unlikePost: (postId: string) => void;
+  likePost: (postId: string) => Promise<void>;
+  unlikePost: (postId: string) => Promise<void>;
   repostPost: (postId: string) => void;
   unrepostPost: (postId: string) => void;
   unquotePost: (postId: string) => void;
@@ -20,63 +20,73 @@ interface PostContextType {
   getLikedPosts: (userId: string) => Post[];
   getRepostedPosts: (userId: string) => Post[];
   getFeedPosts: () => Post[];
-  getPost: (postId: string) => Post | null;
+  getPost: (postId: string) => Post | undefined;
   getPostByUrlId: (urlId: string) => Post | null;
   hasReposted: (contentId: string, isComment?: boolean) => boolean;
   hasQuoted: (contentId: string) => boolean;
   getUserQuoteOfPost: (postId: string) => Post | null;
   isUserOwnRepost: (postId: string) => boolean;
   isUserOwnQuote: (postId: string) => boolean;
+  isPostLiked: (postId: string) => Promise<boolean>;
+  getComments: (postId: string) => Promise<Comment[]>;
+  createComment: (postId: string, content: string) => Promise<void>;
+  deleteComment: (commentId: string) => Promise<void>;
 }
 
 const PostContext = createContext<PostContextType | undefined>(undefined);
 
 export function PostProvider({ children }: { children: ReactNode }) {
-  const [posts, setPosts] = useLocalStorage<Post[]>('posts', []);
+  const [posts, setPosts] = useState<Post[]>([]);
   const { currentUser } = useAuth();
 
-  // Create a new post
-  const createPost = useCallback((content: string) => {
-    if (!currentUser) {
-      throw new Error('You must be logged in to create a post');
-    }
-    
-    const newPost: Post = {
-      id: Date.now().toString(),
-      content: content.trim(),
-      authorId: currentUser.id,
-      createdAt: new Date().toISOString(),
-      likes: [],
+  useEffect(() => {
+    const loadPosts = async () => {
+      try {
+        const data = await supabaseService.getPosts();
+        setPosts(data);
+      } catch (error) {
+        console.error('Error loading posts:', error);
+        setPosts([]);
+      }
     };
-    
-    setPosts(prevPosts => [newPost, ...prevPosts]);
-  }, [currentUser, setPosts]);
 
-  // Delete a post
-  const deletePost = useCallback((postId: string) => {
-    if (!currentUser) {
-      throw new Error('You must be logged in to delete a post');
+    loadPosts();
+  }, []);
+
+  const getPost = (postId: string) => {
+    return posts.find(post => post.id === postId);
+  };
+
+  const createPost = async (content: string, mediaUrl?: string) => {
+    if (!currentUser) throw new Error('Not logged in');
+
+    try {
+      const newPost = await supabaseService.createPost({
+        authorId: currentUser.id,
+        content,
+        mediaUrl,
+        createdAt: new Date().toISOString(),
+        likes: []
+      });
+      setPosts(prevPosts => [newPost, ...prevPosts]);
+    } catch (error) {
+      console.error('Error creating post:', error);
+      throw error;
     }
-    
-    setPosts(prevPosts => {
-      const postToDelete = prevPosts.find(post => post.id === postId);
-      if (!postToDelete) {
-        throw new Error('Post not found');
-      }
-      
-      if (postToDelete.authorId !== currentUser.id) {
-        throw new Error('You can only delete your own posts');
-      }
-      
-      // Delete the original post and any reposts of it
-      return prevPosts.filter(post => 
-        (post.id !== postId && !(post.isRepost && post.originalPostId === postId)) || 
-        (post.id === postId && post.authorId !== currentUser.id)
-      );
-    });
-  }, [currentUser, setPosts]);
+  };
 
-  // Edit a post
+  const deletePost = async (postId: string) => {
+    if (!currentUser) throw new Error('Not logged in');
+
+    try {
+      await supabaseService.deletePost(postId);
+      setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      throw error;
+    }
+  };
+
   const editPost = useCallback((postId: string, content: string) => {
     if (!currentUser) {
       throw new Error('You must be logged in to edit a post');
@@ -109,63 +119,105 @@ export function PostProvider({ children }: { children: ReactNode }) {
     });
   }, [currentUser, setPosts]);
 
-  // Like a post
-  const likePost = useCallback((postId: string) => {
-    if (!currentUser) {
-      throw new Error('You must be logged in to like a post');
-    }
-    
-    setPosts(prevPosts => {
-      const postToLike = prevPosts.find(post => post.id === postId);
-      if (!postToLike) {
-        throw new Error('Post not found');
-      }
-      
-      // Don't add duplicate like
-      if (postToLike.likes.includes(currentUser.id)) {
-        return prevPosts;
-      }
-      
-      return prevPosts.map(post => {
-        if (post.id === postId) {
-          return {
-            ...post,
-            likes: [...post.likes, currentUser.id],
-          };
-        }
-        return post;
-      });
-    });
-  }, [currentUser, setPosts]);
+  const likePost = async (postId: string) => {
+    if (!currentUser) throw new Error('Not logged in');
 
-  // Unlike a post
-  const unlikePost = useCallback((postId: string) => {
-    if (!currentUser) {
-      throw new Error('You must be logged in to unlike a post');
-    }
-    
-    setPosts(prevPosts => {
-      const postToUnlike = prevPosts.find(post => post.id === postId);
-      if (!postToUnlike) {
-        throw new Error('Post not found');
-      }
-      
-      // Only remove like if it exists
-      if (!postToUnlike.likes.includes(currentUser.id)) {
-        return prevPosts;
-      }
-      
-      return prevPosts.map(post => {
+    try {
+      await supabaseService.likePost(postId, currentUser.id);
+      setPosts(prevPosts => prevPosts.map(post => {
         if (post.id === postId) {
           return {
             ...post,
-            likes: post.likes.filter(id => id !== currentUser.id),
+            likes: [...post.likes, currentUser.id]
           };
         }
         return post;
+      }));
+    } catch (error) {
+      console.error('Error liking post:', error);
+      throw error;
+    }
+  };
+
+  const unlikePost = async (postId: string) => {
+    if (!currentUser) throw new Error('Not logged in');
+
+    try {
+      await supabaseService.unlikePost(postId, currentUser.id);
+      setPosts(prevPosts => prevPosts.map(post => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            likes: post.likes.filter(id => id !== currentUser.id)
+          };
+        }
+        return post;
+      }));
+    } catch (error) {
+      console.error('Error unliking post:', error);
+      throw error;
+    }
+  };
+
+  const isPostLiked = async (postId: string) => {
+    if (!currentUser) return false;
+    return supabaseService.isPostLiked(postId, currentUser.id);
+  };
+
+  const getComments = async (postId: string) => {
+    try {
+      return await supabaseService.getComments(postId);
+    } catch (error) {
+      console.error('Error getting comments:', error);
+      throw error;
+    }
+  };
+
+  const createComment = async (postId: string, content: string) => {
+    if (!currentUser) throw new Error('Not logged in');
+
+    try {
+      const newComment = await supabaseService.createComment({
+        postId,
+        authorId: currentUser.id,
+        content,
+        createdAt: new Date().toISOString(),
+        likes: []
       });
-    });
-  }, [currentUser, setPosts]);
+      setPosts(prevPosts => prevPosts.map(post => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            comments: [...(post.comments || []), newComment]
+          };
+        }
+        return post;
+      }));
+    } catch (error) {
+      console.error('Error creating comment:', error);
+      throw error;
+    }
+  };
+
+  const deleteComment = async (commentId: string) => {
+    if (!currentUser) throw new Error('Not logged in');
+
+    try {
+      await supabaseService.deleteComment(commentId);
+      setPosts(prevPosts => prevPosts.map(post => {
+        if (post.comments) {
+          return {
+            ...post,
+            comments: post.comments.filter(comment => comment.id !== commentId)
+          };
+        }
+        return post;
+      }));
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      throw error;
+    }
+  };
 
   // Check if the current user has already reposted a specific post or comment
   const hasReposted = useCallback((contentId: string, isComment: boolean = false) => {
@@ -507,12 +559,6 @@ export function PostProvider({ children }: { children: ReactNode }) {
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [currentUser, posts]);
 
-  // Get a specific post by ID
-  const getPost = useCallback((postId: string) => {
-    if (!postId) return null;
-    return posts.find(post => post.id === postId) || null;
-  }, [posts]);
-
   // Get a post by its URL ID
   const getPostByUrlId = useCallback((urlId: string) => {
     if (!urlId) return null;
@@ -549,6 +595,10 @@ export function PostProvider({ children }: { children: ReactNode }) {
     getUserQuoteOfPost,
     isUserOwnRepost,
     isUserOwnQuote,
+    isPostLiked,
+    getComments,
+    createComment,
+    deleteComment
   }), [
     posts,
     createPost,
@@ -572,6 +622,10 @@ export function PostProvider({ children }: { children: ReactNode }) {
     getUserQuoteOfPost,
     isUserOwnRepost,
     isUserOwnQuote,
+    isPostLiked,
+    getComments,
+    createComment,
+    deleteComment
   ]);
 
   return (
