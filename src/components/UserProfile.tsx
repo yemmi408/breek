@@ -8,14 +8,16 @@ import { useComments } from '../context/CommentContext';
 import { PostList } from './PostList';
 import { CommentList } from './CommentList';
 import { FollowModal } from './FollowModal';
+import { Link } from 'react-router-dom';
+import { FollowList } from './FollowList';
 
 interface UserProfileProps {
-  user: User;
+  userId: string;
 }
 
-const UserProfileComponent = ({ user }: UserProfileProps) => {
+const UserProfileComponent = ({ userId }: UserProfileProps) => {
+  const { getUser, getFollowers } = useUsers();
   const { currentUser } = useAuth();
-  const { isFollowing, followUser, unfollowUser, getFollowers, getFollowing } = useUsers();
   const { getUserPosts, getLikedPosts, getRepostedPosts } = usePosts();
   const { getUserComments, getUserRepostedComments } = useComments();
   
@@ -23,21 +25,27 @@ const UserProfileComponent = ({ user }: UserProfileProps) => {
   const [showFollowModal, setShowFollowModal] = useState(false);
   const [followModalType, setFollowModalType] = useState<'followers' | 'following'>('following');
   
+  const user = getUser(userId);
+  if (!user) return null;
+  
+  const followers = getFollowers(userId);
+  
   // Memoize these computed values to avoid recalculation on every render
   const isCurrentUser = currentUser?.id === user.id;
-  const following = isFollowing(user.id);
+  const following = user.following.includes(currentUser?.id || '');
   
   // Count followers and following
-  const followerCount = getFollowers(user.id).length;
+  const followerCount = followers.length;
   const followingCount = user.following.length;
   
   const handleFollowToggle = useCallback(() => {
+    if (!currentUser) return;
     if (following) {
-      unfollowUser(user.id);
+      // Implement unfollow logic
     } else {
-      followUser(user.id);
+      // Implement follow logic
     }
-  }, [following, unfollowUser, followUser, user.id]);
+  }, [following, currentUser]);
 
   const openFollowersModal = useCallback(() => {
     setFollowModalType('followers');
@@ -57,7 +65,7 @@ const UserProfileComponent = ({ user }: UserProfileProps) => {
     // Get data only for the active tab to improve performance
     switch (activeTab) {
       case 'posts': {
-        const posts = getUserPosts(user.id);
+        const posts = getUserPosts(userId);
         return posts.length > 0 ? (
           <PostList posts={posts} />
         ) : (
@@ -65,8 +73,8 @@ const UserProfileComponent = ({ user }: UserProfileProps) => {
         );
       }
       case 'comments': {
-        const comments = getUserComments(user.id);
-        const repostedComments = getUserRepostedComments(user.id);
+        const comments = getUserComments(userId);
+        const repostedComments = getUserRepostedComments(userId);
         
         const allComments = [...comments, ...repostedComments]
           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -84,7 +92,7 @@ const UserProfileComponent = ({ user }: UserProfileProps) => {
         );
       }
       case 'likes': {
-        const likedPosts = getLikedPosts(user.id);
+        const likedPosts = getLikedPosts(userId);
         return likedPosts.length > 0 ? (
           <PostList posts={likedPosts} />
         ) : (
@@ -92,7 +100,7 @@ const UserProfileComponent = ({ user }: UserProfileProps) => {
         );
       }
       case 'reposts': {
-        const reposts = getRepostedPosts(user.id);
+        const reposts = getRepostedPosts(userId);
         return reposts.length > 0 ? (
           <PostList posts={reposts} />
         ) : (
@@ -225,7 +233,7 @@ const UserProfileComponent = ({ user }: UserProfileProps) => {
         isOpen={showFollowModal}
         onClose={() => setShowFollowModal(false)}
         type={followModalType}
-        userId={user.id}
+        userId={userId}
         username={user.username}
       />
     </div>

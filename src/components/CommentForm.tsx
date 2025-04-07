@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { CircleHelp } from 'lucide-react';
 import { useComments } from '../context/CommentContext';
 import { useAuth } from '../context/AuthContext';

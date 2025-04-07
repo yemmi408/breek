@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Link, useNavigate } from 'react-router-dom';
 import { Apple, Heart, MessageCircle, Pencil, Trash } from 'lucide-react';
@@ -20,7 +20,7 @@ interface CommentItemProps {
 }
 
 export function CommentItem({ comment, showFullReplies = false, isDetailed = false, isPreview = false }: CommentItemProps) {
-  const { editComment, deleteComment, likeComment, unlikeComment, getCommentReplies, getComment, comments } = useComments();
+  const { editComment, deleteComment, likeComment, unlikeComment, getCommentReplies, getComment } = useComments();
   const { getUser } = useUsers();
   const { currentUser } = useAuth();
   const { getPost } = usePosts();

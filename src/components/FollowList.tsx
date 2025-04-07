@@ -1,5 +1,5 @@
 import { useState, useEffect, memo, useCallback } from 'react';
-import { UserCheck, UserMinus, UserPlus } from 'lucide-react';
+import { UserCheck, UserPlus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useUsers } from '../context/UserContext';
 import { useAuth } from '../context/AuthContext';
