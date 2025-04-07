@@ -1,5 +1,5 @@
 import { useState, useEffect, memo, useCallback } from 'react';
-import { UserCheck, UserPlus } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useUsers } from '../context/UserContext';
 import { useAuth } from '../context/AuthContext';
@@ -13,7 +13,7 @@ interface FollowListProps {
 const USERS_PER_PAGE = 15;
 
 const FollowListComponent = ({ userId, type }: FollowListProps) => {
-  const { getFollowers, getFollowing, getUserByUsername, followUser, unfollowUser, isFollowing } = useUsers();
+  const { getFollowers, getFollowing, followUser, unfollowUser, isFollowing } = useUsers();
   const { currentUser } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [displayedUsers, setDisplayedUsers] = useState<User[]>([]);
@@ -126,12 +126,10 @@ const FollowListComponent = ({ userId, type }: FollowListProps) => {
                   >
                     {isFollowingUser ? (
                       <>
-                        <UserCheck size={16} />
                         <span className="hidden sm:inline">Following</span>
                       </>
                     ) : (
                       <>
-                        <UserPlus size={16} />
                         <span className="hidden sm:inline">Follow</span>
                       </>
                     )}

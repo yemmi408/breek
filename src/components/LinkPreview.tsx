@@ -1,5 +1,4 @@
 import { ExternalLink } from 'lucide-react';
-import { useState } from 'react';
 
 interface LinkPreviewProps {
   url: string;

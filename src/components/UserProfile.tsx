@@ -1,4 +1,4 @@
-import { User as UserIcon, UserMinus, UserPlus } from 'lucide-react';
+import { UserMinus, UserPlus } from 'lucide-react';
 import { useState, useCallback, memo } from 'react';
 import { User } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -9,7 +9,6 @@ import { PostList } from './PostList';
 import { CommentList } from './CommentList';
 import { FollowModal } from './FollowModal';
 import { Link } from 'react-router-dom';
-import { FollowList } from './FollowList';
 
 interface UserProfileProps {
   userId: string;
@@ -151,94 +150,71 @@ const UserProfileComponent = ({ userId }: UserProfileProps) => {
           )}
         </div>
         
-        <div className="mt-3">
-          <h1 className="text-xl font-bold text-black dark:text-white">{user.displayName}</h1>
-          <p className="text-gray-500 dark:text-gray-400">@{user.username}</p>
+        <div className="mt-4">
+          <h1 className="text-2xl font-bold">{user.displayName}</h1>
+          <p className="text-gray-500">@{user.username}</p>
         </div>
         
-        {user.bio && (
-          <p className="mt-3 text-black dark:text-white">{user.bio}</p>
-        )}
-        
-        <div className="mt-3 flex space-x-4">
-          <button 
-            onClick={openFollowingModal} 
-            className="flex items-center space-x-1 hover:underline"
+        <div className="mt-4 flex space-x-4">
+          <button
+            onClick={openFollowersModal}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
           >
-            <span className="font-bold text-black dark:text-white">{followingCount}</span>
-            <span className="text-gray-500 dark:text-gray-400">Following</span>
+            <span className="font-semibold">{followerCount}</span> Followers
           </button>
-          
-          <button 
-            onClick={openFollowersModal} 
-            className="flex items-center space-x-1 hover:underline"
+          <button
+            onClick={openFollowingModal}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
           >
-            <span className="font-bold text-black dark:text-white">{followerCount}</span>
-            <span className="text-gray-500 dark:text-gray-400">Followers</span>
+            <span className="font-semibold">{followingCount}</span> Following
           </button>
         </div>
       </div>
       
-      <div>
-        <div className="flex border-b border-gray-200 dark:border-gray-800">
+      <div className="border-b border-gray-200 dark:border-gray-800">
+        <div className="flex space-x-4">
           <button
             onClick={() => handleTabChange('posts')}
-            className={`flex-1 py-3 font-medium text-center ${
-              activeTab === 'posts' 
-                ? 'text-blue-500 border-b-2 border-blue-500' 
-                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-            }`}
+            className={`px-4 py-2 ${activeTab === 'posts' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-500'}`}
           >
             Posts
           </button>
           <button
             onClick={() => handleTabChange('comments')}
-            className={`flex-1 py-3 font-medium text-center ${
-              activeTab === 'comments' 
-                ? 'text-blue-500 border-b-2 border-blue-500' 
-                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-            }`}
+            className={`px-4 py-2 ${activeTab === 'comments' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-500'}`}
           >
             Comments
           </button>
-          {isCurrentUser && (
-            <button
-              onClick={() => handleTabChange('likes')}
-              className={`flex-1 py-3 font-medium text-center ${
-                activeTab === 'likes' 
-                  ? 'text-blue-500 border-b-2 border-blue-500' 
-                  : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-              }`}
-            >
-              Likes
-            </button>
-          )}
+          <button
+            onClick={() => handleTabChange('likes')}
+            className={`px-4 py-2 ${activeTab === 'likes' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-500'}`}
+          >
+            Likes
+          </button>
           <button
             onClick={() => handleTabChange('reposts')}
-            className={`flex-1 py-3 font-medium text-center ${
-              activeTab === 'reposts' 
-                ? 'text-blue-500 border-b-2 border-blue-500' 
-                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-            }`}
+            className={`px-4 py-2 ${activeTab === 'reposts' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-500'}`}
           >
             Reposts
           </button>
         </div>
-        
+      </div>
+      
+      <div className="p-4">
         {renderTabContent()}
       </div>
-
-      {/* Follow Modal for showing followers/following */}
-      <FollowModal
-        isOpen={showFollowModal}
-        onClose={() => setShowFollowModal(false)}
-        type={followModalType}
-        userId={userId}
-        username={user.username}
-      />
+      
+      {showFollowModal && (
+        <FollowModal
+          isOpen={showFollowModal}
+          onClose={() => setShowFollowModal(false)}
+          type={followModalType}
+          userId={userId}
+          username={user.username}
+        />
+      )}
     </div>
   );
 };
 
-// Memoize the component to prevent unnecessary re-renders
 export const UserProfile = memo(UserProfileComponent);
