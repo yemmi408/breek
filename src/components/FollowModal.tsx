@@ -7,7 +7,7 @@ interface FollowModalProps {
   isOpen: boolean;
   onClose: () => void;
   type: 'followers' | 'following';
-  userId: string;
+  userId?: string;
   username: string;
 }
 
@@ -70,7 +70,7 @@ export function FollowModal({ isOpen, onClose, type, userId, username }: FollowM
         </div>
         
         <div className="flex-1 overflow-y-auto">
-          <FollowList userId={userId} type={type} />
+          {userId && <FollowList userId={userId} type={type} />}
         </div>
       </div>
     </div>

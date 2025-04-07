@@ -2,29 +2,43 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 interface UserSetupModalProps {
+  isOpen: boolean;
   onClose: () => void;
+  onSubmit: (username: string, displayName: string, password: string) => Promise<void>;
+  initialEmail: string;
+  initialDisplayName?: string;
+  initialUsername: string;
+  error: string;
 }
 
-export function UserSetupModal({ onClose }: UserSetupModalProps) {
+export function UserSetupModal({ 
+  isOpen, 
+  onClose, 
+  onSubmit, 
+  initialEmail, 
+  initialDisplayName, 
+  initialUsername, 
+  error 
+}: UserSetupModalProps) {
   const { currentUser, updateProfile } = useAuth();
-  const [username, setUsername] = useState('');
-  const [displayName, setDisplayName] = useState('');
-  const [error, setError] = useState('');
+  const [username, setUsername] = useState(initialUsername);
+  const [displayName, setDisplayName] = useState(initialDisplayName || '');
+  const [password, setPassword] = useState('');
+  const [localError, setLocalError] = useState(error);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
 
     try {
-      await updateProfile({
-        username: username.trim(),
-        displayName: displayName.trim()
-      });
+      await onSubmit(username.trim(), displayName.trim(), password);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update profile');
+      setLocalError(err instanceof Error ? err.message : 'Failed to update profile');
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -58,7 +72,19 @@ export function UserSetupModal({ onClose }: UserSetupModalProps) {
               maxLength={50}
             />
           </div>
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+          <div>
+            <label className="block text-sm font-medium mb-1">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-2 border rounded-lg"
+              placeholder="Create a password"
+              required
+              minLength={6}
+            />
+          </div>
+          {(error || localError) && <p className="text-red-500 text-sm">{error || localError}</p>}
           <div className="flex justify-end space-x-3">
             <button
               type="button"

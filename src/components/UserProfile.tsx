@@ -10,11 +10,11 @@ import { CommentList } from './CommentList';
 import { FollowModal } from './FollowModal';
 import { Link } from 'react-router-dom';
 
-interface UserProfileProps {
-  userId: string;
-}
+type UserProfileProps = 
+  | { userId: string; user?: never }
+  | { userId?: never; user: User };
 
-const UserProfileComponent = ({ userId }: UserProfileProps) => {
+const UserProfileComponent = ({ userId, user: propUser }: UserProfileProps) => {
   const { getUser, getFollowers } = useUsers();
   const { currentUser } = useAuth();
   const { getUserPosts, getLikedPosts, getRepostedPosts } = usePosts();
@@ -24,10 +24,10 @@ const UserProfileComponent = ({ userId }: UserProfileProps) => {
   const [showFollowModal, setShowFollowModal] = useState(false);
   const [followModalType, setFollowModalType] = useState<'followers' | 'following'>('following');
   
-  const user = getUser(userId);
+  const user = propUser || getUser(userId);
   if (!user) return null;
   
-  const followers = getFollowers(userId);
+  const followers = getFollowers(user.id);
   
   // Memoize these computed values to avoid recalculation on every render
   const isCurrentUser = currentUser?.id === user.id;
@@ -64,7 +64,7 @@ const UserProfileComponent = ({ userId }: UserProfileProps) => {
     // Get data only for the active tab to improve performance
     switch (activeTab) {
       case 'posts': {
-        const posts = getUserPosts(userId);
+        const posts = getUserPosts(user.id);
         return posts.length > 0 ? (
           <PostList posts={posts} />
         ) : (
@@ -72,8 +72,8 @@ const UserProfileComponent = ({ userId }: UserProfileProps) => {
         );
       }
       case 'comments': {
-        const comments = getUserComments(userId);
-        const repostedComments = getUserRepostedComments(userId);
+        const comments = getUserComments(user.id);
+        const repostedComments = getUserRepostedComments(user.id);
         
         const allComments = [...comments, ...repostedComments]
           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -91,7 +91,7 @@ const UserProfileComponent = ({ userId }: UserProfileProps) => {
         );
       }
       case 'likes': {
-        const likedPosts = getLikedPosts(userId);
+        const likedPosts = getLikedPosts(user.id);
         return likedPosts.length > 0 ? (
           <PostList posts={likedPosts} />
         ) : (
@@ -99,7 +99,7 @@ const UserProfileComponent = ({ userId }: UserProfileProps) => {
         );
       }
       case 'reposts': {
-        const reposts = getRepostedPosts(userId);
+        const reposts = getRepostedPosts(user.id);
         return reposts.length > 0 ? (
           <PostList posts={reposts} />
         ) : (
