@@ -22,7 +22,7 @@ interface PostItemProps {
 }
 
 export function PostItem({ post, showFullComments = false, isDetailView = false, isPreview = false }: PostItemProps) {
-  const { likePost, unlikePost, repostPost, unrepostPost, unquotePost, getPost, editPost, posts, hasReposted, isUserOwnRepost, hasQuoted, isUserOwnQuote, getUserQuoteOfPost } = usePosts();
+  const { likePost, unlikePost, repostPost, unrepostPost, unquotePost, getPost, editPost, posts, hasReposted, isUserOwnRepost, hasQuoted, isUserOwnQuote, getUserQuoteOfPost, deletePost } = usePosts();
   const { getUser } = useUsers();
   const { currentUser } = useAuth();
   const { getPostComments, getComment } = useComments();

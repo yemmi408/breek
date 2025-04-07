@@ -221,25 +221,25 @@ export function PostProvider({ children }: { children: ReactNode }) {
   }, [currentUser, posts]);
 
   // Check if a post is the user's own repost
-  const isUserOwnRepost = useCallback((postId: string) => {
+  const isUserOwnRepost = useCallback((postId: string): boolean => {
     if (!currentUser) return false;
     
     const post = posts.find(p => p.id === postId);
     if (!post) return false;
     
     // Check if this is a repost made by the current user
-    return post.isRepost && post.authorId === currentUser.id;
+    return Boolean(post.isRepost && post.authorId === currentUser.id);
   }, [currentUser, posts]);
 
   // Check if a post is the user's own quote
-  const isUserOwnQuote = useCallback((postId: string) => {
+  const isUserOwnQuote = useCallback((postId: string): boolean => {
     if (!currentUser) return false;
     
     const post = posts.find(p => p.id === postId);
     if (!post) return false;
     
     // Check if this is a quote made by the current user
-    return post.isQuote && post.authorId === currentUser.id;
+    return Boolean(post.isQuote && post.authorId === currentUser.id);
   }, [currentUser, posts]);
 
   // Undo a repost
