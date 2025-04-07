@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { DeactivateModal } from '../components/DeactivateModal';
 import { Moon, Sun } from 'lucide-react';
-import { UsernameValidator, DisplayNameValidator, validateUsername, validateDisplayName } from '../components/UsernameValidator';
+import { UsernameValidator, DisplayNameValidator } from '../components/UsernameValidator';
 
 const MAX_IMAGE_SIZE = 8 * 1024 * 1024; // 8MB in bytes
 

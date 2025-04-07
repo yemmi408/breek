@@ -1,13 +1,11 @@
 import { useMemo } from 'react';
 import { PostForm } from '../components/PostForm';
-import { PostList } from '../components/PostList';
 import { usePosts } from '../context/PostContext';
 import { useAuth } from '../context/AuthContext';
-import { CommentItem } from '../components/CommentItem';
 import { PostItem } from '../components/PostItem';
 
 export function HomePage() {
-  const { getFeedPosts, posts } = usePosts();
+  const { getFeedPosts } = usePosts();
   const { currentUser } = useAuth();
   
   const feedPosts = getFeedPosts();

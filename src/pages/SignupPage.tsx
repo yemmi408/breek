@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { GoogleSignInButton } from '../components/GoogleSignInButton';
@@ -150,31 +150,37 @@ export function SignupPage() {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-blue-500 text-white py-2 rounded-lg font-medium disabled:opacity-50 hover:bg-blue-600"
+          className="w-full py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
         >
-          {isLoading ? 'Creating account...' : 'Sign up'}
+          {isLoading ? 'Creating account...' : 'Create account'}
         </button>
       </form>
       
-      <div className="mt-6 relative">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-gray-300 dark:border-gray-700"></div>
-        </div>
-        <div className="relative flex justify-center text-sm">
-          <span className="px-2 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400">Or sign up with</span>
-        </div>
+      <div className="mt-6 text-center">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Already have an account?{' '}
+          <Link to="/login" className="text-blue-500 hover:underline">
+            Log in
+          </Link>
+        </p>
       </div>
       
       <div className="mt-6">
-        <GoogleSignInButton />
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300 dark:border-gray-700"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white dark:bg-gray-900 text-gray-500">
+              Or continue with
+            </span>
+          </div>
+        </div>
+        
+        <div className="mt-6">
+          <GoogleSignInButton />
+        </div>
       </div>
-      
-      <p className="mt-4 text-center text-gray-600 dark:text-gray-400">
-        Already have an account?{' '}
-        <Link to="/login" className="text-blue-500 hover:underline">
-          Log in
-        </Link>
-      </p>
     </div>
   );
 }
